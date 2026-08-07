@@ -166,14 +166,17 @@ document.addEventListener('DOMContentLoaded', () => {
         drawParticles();
     }
 
-    // 7. Team Slider Implementation
-    const track = document.querySelector('.team-slider-track');
-    const slides = Array.from(document.querySelectorAll('.team-slide'));
-    const nextBtn = document.querySelector('.next-btn');
-    const prevBtn = document.querySelector('.prev-btn');
-    const dotsContainer = document.querySelector('.slider-dots');
+    // 7. Generic Slider Implementation (for Team and Testimonials)
+    function initSlider(config) {
+        const track = document.querySelector(config.trackSelector);
+        const slides = Array.from(document.querySelectorAll(config.slideSelector));
+        const nextBtn = document.querySelector(config.nextBtnSelector);
+        const prevBtn = document.querySelector(config.prevBtnSelector);
+        const dotsContainer = document.querySelector(config.dotsSelector);
+        const sliderOuter = document.querySelector(config.outerSelector);
 
-    if (track && slides.length > 0) {
+        if (!track || slides.length === 0) return;
+
         let currentIndex = 0;
         let slidesPerView = 3;
         let autoPlayTimer = null;
@@ -223,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (slides.length === 0) return;
             const slideWidth = slides[0].getBoundingClientRect().width;
             
-            // The gap is 2rem (32px in standard root)
+            // Gap between slides
             const gap = parseFloat(getComputedStyle(track).gap) || 32;
             const amountToMove = currentIndex * (slideWidth + gap);
             track.style.transform = `translateX(-${amountToMove}px)`;
@@ -282,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     goToSlide(currentIndex + 1);
                 }
-            }, 5000); // 5 seconds autoplay
+            }, config.interval || 5000);
         }
 
         function stopAutoplay() {
@@ -311,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
             startX = getPositionX(event);
             stopAutoplay();
             
-            // Get current transform value
             const style = window.getComputedStyle(track);
             const matrix = new WebKitCSSMatrix(style.transform);
             prevTranslate = matrix.m41;
@@ -333,13 +335,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const movedBy = currentTranslate - prevTranslate;
 
-            // If moved more than 50px, switch slide
             if (movedBy < -50 && currentIndex < slides.length - slidesPerView) {
                 goToSlide(currentIndex + 1);
             } else if (movedBy > 50 && currentIndex > 0) {
                 goToSlide(currentIndex - 1);
             } else {
-                goToSlide(currentIndex); // snap back
+                goToSlide(currentIndex);
             }
 
             startAutoplay();
@@ -357,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
         track.addEventListener('touchend', dragEnd);
 
         // Pause autoplay on hover
-        const sliderOuter = document.querySelector('.team-slider-outer');
         if (sliderOuter) {
             sliderOuter.addEventListener('mouseenter', stopAutoplay);
             sliderOuter.addEventListener('mouseleave', startAutoplay);
@@ -372,4 +372,26 @@ document.addEventListener('DOMContentLoaded', () => {
             startAutoplay();
         }, 100);
     }
+
+    // Initialize Team Slider
+    initSlider({
+        trackSelector: '.team-slider-track',
+        slideSelector: '.team-slide',
+        nextBtnSelector: '.team-slider-outer .next-btn',
+        prevBtnSelector: '.team-slider-outer .prev-btn',
+        dotsSelector: '.team-slider-outer .slider-dots',
+        outerSelector: '.team-slider-outer',
+        interval: 5000
+    });
+
+    // Initialize Testimonials Slider
+    initSlider({
+        trackSelector: '.testimonial-slider-track',
+        slideSelector: '.testimonial-slide',
+        nextBtnSelector: '.testimonial-next-btn',
+        prevBtnSelector: '.testimonial-prev-btn',
+        dotsSelector: '.testimonial-dots',
+        outerSelector: '.testimonial-slider-outer',
+        interval: 6000
+    });
 });
