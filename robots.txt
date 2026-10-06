@@ -1,0 +1,8 @@
+# robots.txt for MM Digital Garage
+# Production domain: https://www.mmdigitalgarage.tech
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.mmdigitalgarage.tech/sitemap.xml

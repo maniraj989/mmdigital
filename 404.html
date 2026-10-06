@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found (404) | MM Digital Garage</title>
+    <meta name="description" content="The page you are looking for does not exist or has been moved. Explore MM Digital Garage's digital marketing and web solutions.">
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="https://www.mmdigitalgarage.tech/404.html">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Theme Initialization Script (Prevents FOUT) -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('mm-theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+
+<body class="page-404">
+    <!-- Header -->
+    <header class="site-header">
+        <div class="container header-container">
+            <a href="index.html" class="brand-block" aria-label="MM Digital Garage Home">
+                <div class="brand-logo-circle">
+                    <img src="assets/images/logo.png" alt="MM Digital Garage Mark" class="brand-logo-img" width="24" height="24">
+                </div>
+                <div class="brand-text-group">
+                    <span class="brand-title">MM DIGITAL GARAGE</span>
+                    <span class="brand-tagline">Agency &middot; Tech &middot; Creative</span>
+                </div>
+            </a>
+
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle-tool" aria-label="Toggle theme mode" title="Toggle theme">
+                    <i class="fas fa-sun theme-icon-sun" aria-hidden="true"></i>
+                    <i class="fas fa-moon theme-icon-moon" aria-hidden="true"></i>
+                </button>
+                <a href="index.html#contact" class="btn-ref-dark header-cta-btn">Let's Talk &rarr;</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="error-page-container">
+        <div class="container error-content text-center">
+            <div class="error-badge">
+                <span class="status-indicator"></span> 404 ERROR
+            </div>
+            <h1 class="error-title">Page Not Found</h1>
+            <p class="error-desc">
+                The URL you requested doesn't exist, has been relocated, or is temporarily unavailable. Let's get you back on track to scaling your digital presence.
+            </p>
+            <div class="error-actions">
+                <a href="index.html" class="btn btn-primary">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Return to Homepage
+                </a>
+                <a href="services.html" class="btn btn-secondary">
+                    View Services
+                </a>
+                <a href="index.html#contact" class="btn btn-tertiary">
+                    Contact Support
+                </a>
+            </div>
+
+            <div class="error-links-box">
+                <h2 class="error-links-title">Quick Navigation</h2>
+                <div class="error-links-grid">
+                    <a href="services.html#seo" class="error-link-card">
+                        <i class="fas fa-search-dollar" aria-hidden="true"></i>
+                        <span>Search Engine Optimization</span>
+                    </a>
+                    <a href="services.html#web" class="error-link-card">
+                        <i class="fas fa-laptop-code" aria-hidden="true"></i>
+                        <span>Web Development</span>
+                    </a>
+                    <a href="services.html#ppc" class="error-link-card">
+                        <i class="fas fa-bullseye" aria-hidden="true"></i>
+                        <span>Performance Ads</span>
+                    </a>
+                    <a href="tel:+9779819633745" class="error-link-card">
+                        <i class="fas fa-phone-alt" aria-hidden="true"></i>
+                        <span>Call: +977 9819633745</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer-simple">
+        <div class="container text-center">
+            <p>&copy; 2026 MM Digital Garage. All rights reserved. Lalitpur, Nepal.</p>
+            <div class="footer-legal-links" style="margin-top: 0.5rem; display: flex; justify-content: center; gap: 1.25rem;">
+                <a href="privacy-policy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+                <a href="sitemap.xml">XML Sitemap</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Theme Logic for 404 -->
+    <script>
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const current = document.documentElement.getAttribute('data-theme') || 'dark';
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                localStorage.setItem('mm-theme', next);
+            });
+        }
+    </script>
+</body>
+</html>
