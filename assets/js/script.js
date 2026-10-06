@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // 6. TEAM CAROUSEL SCROLLING CONTROLS (Accommodates 7 Members with Loop)
+    // 6. TEAM CAROUSEL SCROLLING CONTROLS (Accommodates Full Team Showcase with Loop)
     // =========================================================================
     const teamGrid = document.querySelector('.team-grid-four');
     const teamPrev = document.querySelector('.team-prev');
@@ -475,6 +475,19 @@ document.addEventListener('DOMContentLoaded', () => {
             teamGrid.scrollLeft = scrollStartLeftTeam - walk;
         });
     }
+
+    // =========================================================================
+    // 6B. FEATURED WORK EMPTY LINK GUARD (Prevents navigation on pending links)
+    // =========================================================================
+    document.querySelectorAll('.work-card-item').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const href = card.getAttribute('href');
+            if (!href || href.trim() === '' || href === '#' || href.startsWith('javascript:')) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    });
 
     // =========================================================================
     // 7. SERVICES SLIDER (Display 3 Services on Desktop with Slider Controls)
@@ -792,5 +805,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initial state update
         updateTestActiveState();
+    }
+
+    // =========================================================================
+    // PROJECT LINKS: GUARD EMPTY/PENDING LINKS
+    // =========================================================================
+    document.querySelectorAll('.is-pending-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const url = link.getAttribute('data-project-url') || link.getAttribute('href');
+            if (!url || url.trim() === '' || url === '#') {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // =========================================================================
+    // AGENCY ACHIEVEMENTS & STATISTICS (Central Config & Smooth Counter)
+    // =========================================================================
+    /**
+     * Central Editable Configuration for Agency Statistics.
+     * Update target numbers, suffixes, and labels here as figures are verified.
+     */
+    const AGENCY_STATS_CONFIG = {
+        'stat-brands': {
+            target: 55,
+            suffix: '+',
+            isPlaceholder: true,
+            label: 'Brands & Businesses Served'
+        },
+        'stat-projects': {
+            target: 130,
+            suffix: '+',
+            isPlaceholder: true,
+            label: 'Projects Completed'
+        },
+        'stat-services': {
+            target: 25,
+            suffix: '+',
+            isPlaceholder: true,
+            label: 'Digital Services'
+        },
+        'stat-satisfaction': {
+            target: 97,
+            suffix: '%',
+            isPlaceholder: true,
+            label: 'Client Satisfaction'
+        }
+    };
+
+    const statsSection = document.getElementById('stats');
+    if (statsSection) {
+        const statNumberEls = statsSection.querySelectorAll('.stat-number');
+        let statsAnimated = false;
+
+        const animateStats = () => {
+            if (statsAnimated) return;
+            statsAnimated = true;
+
+            const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            statNumberEls.forEach(el => {
+                const statId = el.getAttribute('data-stat-id');
+                const config = AGENCY_STATS_CONFIG[statId];
+                const target = config ? config.target : parseInt(el.getAttribute('data-target') || '0', 10);
+
+                if (prefersReducedMotion) {
+                    el.textContent = target;
+                    return;
+                }
+
+                // Smooth count-up animation
+                const duration = 1600; // ms
+                const startTime = performance.now();
+
+                const updateCount = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Cubic ease-out curve
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    const currentVal = Math.floor(easeOut * target);
+
+                    el.textContent = currentVal;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(updateCount);
+                    } else {
+                        el.textContent = target;
+                    }
+                };
+
+                requestAnimationFrame(updateCount);
+            });
+        };
+
+        if ('IntersectionObserver' in window) {
+            const statsObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateStats();
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.25,
+                rootMargin: '0px 0px -40px 0px'
+            });
+
+            statsObserver.observe(statsSection);
+        } else {
+            // Fallback for older browsers
+            animateStats();
+        }
     }
 });

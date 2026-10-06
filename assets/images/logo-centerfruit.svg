@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" role="img" aria-label="Centerfruit Logo Placeholder">
+  <!-- Replaceable Brand Logo Placeholder: Centerfruit (Perfetti Van Melle) -->
+  <defs>
+    <linearGradient id="cfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E83E8C" />
+      <stop offset="50%" stop-color="#FD7E14" />
+      <stop offset="100%" stop-color="#20C997" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="transparent" />
+  <text x="50%" y="46" font-family="'Manrope', 'Montserrat', 'Inter', sans-serif" font-size="28" font-weight="900" font-style="italic" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">CENTER<tspan fill="#FFD700">FRUIT</tspan></text>
+</svg>

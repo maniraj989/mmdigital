@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 468 412" width="468" height="412" fill="none">
+  <!-- Yasuda Brand Emblem matching reference layout -->
+  <circle cx="383" cy="62" r="33" fill="#0A5CA8" />
+  <circle cx="76" cy="282" r="36" fill="#0A5CA8" />
+  <circle cx="236" cy="180" r="148" fill="#0A5CA8" />
+  <circle cx="236" cy="180" r="138" stroke="rgba(255,255,255,0.22)" stroke-width="2" fill="none" />
+  <image href="logo-yasuda-white.png" x="126" y="140" width="220" height="80" preserveAspectRatio="xMidYMid meet" />
+</svg>
