@@ -162,38 +162,252 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Modal Form Submission Handling
+    // =========================================================================
+    // 5A. MODAL PROPOSAL REQUEST FORM SUBMISSION (Resend Email API)
+    // =========================================================================
     const modalForm = document.querySelector('.modal-contact-form');
     const formAlert = document.getElementById('modal-form-alert');
 
     if (modalForm) {
-        modalForm.addEventListener('submit', (e) => {
+        modalForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Clear previous alert
+            if (formAlert) {
+                formAlert.style.display = 'none';
+                formAlert.className = 'form-status-box';
+                formAlert.innerHTML = '';
+            }
+
+            const formData = new FormData(modalForm);
+            const firstName = (formData.get('firstName') || '').trim();
+            const lastName = (formData.get('lastName') || '').trim();
+            const email = (formData.get('email') || '').trim();
+            const phone = (formData.get('phone') || '').trim();
+            const notes = (formData.get('notes') || '').trim();
+            const gotcha = formData.get('_gotcha') || '';
+
+            // Collect all checked capabilities
+            const checkedServices = [];
+            modalForm.querySelectorAll('input[name="services"]:checked').forEach(cb => {
+                if (cb.value) checkedServices.push(cb.value);
+            });
+
+            // Client-side validation
+            if (!firstName) {
+                showModalError('Please enter your first name.');
+                const fInput = modalForm.querySelector('#first-name');
+                if (fInput) fInput.focus();
+                return;
+            }
+
+            if (!lastName) {
+                showModalError('Please enter your last name.');
+                const lInput = modalForm.querySelector('#last-name');
+                if (lInput) lInput.focus();
+                return;
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showModalError('Please enter a valid business email address.');
+                const eInput = modalForm.querySelector('#email-addr');
+                if (eInput) eInput.focus();
+                return;
+            }
+
             const submitBtn = modalForm.querySelector('button[type="submit"]');
             const origText = submitBtn ? submitBtn.innerHTML : 'Submit Inquiry &rarr;';
 
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
+                submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting Proposal...';
             }
 
-            setTimeout(() => {
-                if (formAlert) {
-                    formAlert.className = 'form-status-box success';
-                    formAlert.innerHTML = '<i class="fas fa-check-circle"></i> Thank you! Your proposal request has been received. Our team will contact you within 24 business hours.';
-                    formAlert.style.display = 'block';
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        formType: 'proposal',
+                        firstName,
+                        lastName,
+                        email,
+                        phone,
+                        services: checkedServices,
+                        notes,
+                        _gotcha: gotcha
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success) {
+                    if (formAlert) {
+                        formAlert.className = 'form-status-box success';
+                        formAlert.innerHTML = '<i class="fas fa-check-circle" style="margin-right: 6px;"></i> ' + 
+                            (result.message || 'Thank you! Your proposal request has been received. Our team will contact you within 24 business hours.');
+                        formAlert.style.display = 'block';
+                    }
+                    modalForm.reset();
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-check"></i> Inquiry Received!';
+                        setTimeout(() => {
+                            submitBtn.innerHTML = origText;
+                        }, 5000);
+                    }
+                } else {
+                    const errMsg = result.message || 'Failed to submit proposal request. Please check your details or email us directly at mmdigitagarage@gmail.com.';
+                    showModalError(errMsg);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = origText;
+                    }
                 }
-
-                modalForm.reset();
-
+            } catch (fetchErr) {
+                showModalError('Network error: Unable to reach the server. Please check your internet connection or email us directly at mmdigitagarage@gmail.com.');
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Inquiry Received!';
-                    setTimeout(() => {
-                        submitBtn.innerHTML = origText;
-                    }, 4000);
+                    submitBtn.innerHTML = origText;
                 }
-            }, 750);
+            }
+
+            function showModalError(msg) {
+                if (formAlert) {
+                    formAlert.className = 'form-status-box error';
+                    formAlert.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> ' + msg;
+                    formAlert.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    // =========================================================================
+    // 5B. CTA PROJECT INQUIRY FORM SUBMISSION (Resend Email API)
+    // =========================================================================
+    const ctaForm = document.getElementById('ctaContactForm');
+    const ctaStatus = document.getElementById('ctaFormStatus');
+    const ctaSubmitBtn = document.getElementById('ctaSubmitBtn');
+
+    if (ctaForm) {
+        ctaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Clear previous status
+            if (ctaStatus) {
+                ctaStatus.style.display = 'none';
+                ctaStatus.className = 'cta-form-status';
+                ctaStatus.innerHTML = '';
+            }
+
+            const formData = new FormData(ctaForm);
+            const name = (formData.get('name') || '').trim();
+            const email = (formData.get('email') || '').trim();
+            const phone = (formData.get('phone') || '').trim();
+            const service = (formData.get('service') || '').trim();
+            const details = (formData.get('details') || '').trim();
+            const gotcha = formData.get('_gotcha') || '';
+
+            // Client-side validation
+            if (!name) {
+                showCtaError('Please enter your full name.');
+                const nInput = ctaForm.querySelector('#cta-name');
+                if (nInput) nInput.focus();
+                return;
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showCtaError('Please enter a valid business email address.');
+                const eInput = ctaForm.querySelector('#cta-email');
+                if (eInput) eInput.focus();
+                return;
+            }
+
+            if (!service) {
+                showCtaError('Please select a required service.');
+                const sInput = ctaForm.querySelector('#cta-service');
+                if (sInput) sInput.focus();
+                return;
+            }
+
+            const origBtnHtml = ctaSubmitBtn ? ctaSubmitBtn.innerHTML : '<span>Send Inquiry &rarr;</span>';
+            if (ctaSubmitBtn) {
+                ctaSubmitBtn.disabled = true;
+                ctaSubmitBtn.innerHTML = '<span><i class="fas fa-circle-notch fa-spin"></i> Sending Inquiry...</span>';
+            }
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        formType: 'inquiry',
+                        name,
+                        email,
+                        phone,
+                        service,
+                        details,
+                        _gotcha: gotcha
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok && result.success) {
+                    if (ctaStatus) {
+                        ctaStatus.className = 'cta-form-status success';
+                        ctaStatus.innerHTML = '<i class="fas fa-check-circle" style="margin-right: 6px;"></i> ' + 
+                            (result.message || 'Thank you! Your inquiry has been sent successfully. Our team will contact you shortly.');
+                        ctaStatus.style.display = 'block';
+                    }
+                    ctaForm.reset();
+                    if (ctaSubmitBtn) {
+                        ctaSubmitBtn.disabled = false;
+                        ctaSubmitBtn.innerHTML = '<span><i class="fas fa-check"></i> Inquiry Sent!</span>';
+                        setTimeout(() => {
+                            ctaSubmitBtn.innerHTML = origBtnHtml;
+                        }, 5000);
+                    }
+                } else {
+                    const errMsg = result.message || 'Unable to submit your inquiry. Please verify your details or email us directly at mmdigitagarage@gmail.com.';
+                    showCtaError(errMsg);
+                    if (ctaSubmitBtn) {
+                        ctaSubmitBtn.disabled = false;
+                        ctaSubmitBtn.innerHTML = origBtnHtml;
+                    }
+                }
+            } catch (fetchErr) {
+                showCtaError('Connection error: Unable to reach the server. Please check your network connection or email us directly at mmdigitagarage@gmail.com.');
+                if (ctaSubmitBtn) {
+                    ctaSubmitBtn.disabled = false;
+                    ctaSubmitBtn.innerHTML = origBtnHtml;
+                }
+            }
+
+            function showCtaError(msg) {
+                if (ctaStatus) {
+                    ctaStatus.className = 'cta-form-status error';
+                    ctaStatus.innerHTML = '<i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> ' + msg;
+                    ctaStatus.style.display = 'block';
+                }
+            }
+        });
+
+        // Real-time error dismissal when typing or selecting
+        ctaForm.querySelectorAll('input, select, textarea').forEach(input => {
+            const clearErr = () => {
+                if (ctaStatus && ctaStatus.classList.contains('error')) {
+                    ctaStatus.style.display = 'none';
+                }
+            };
+            input.addEventListener('input', clearErr);
+            input.addEventListener('change', clearErr);
         });
     }
 
@@ -399,118 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initial state update
         updateActiveState();
-    }
-
-    // =========================================================================
-    // 8. FINAL CTA CONTACT FORM VALIDATION & DIRECT INQUIRY DELIVERY
-    // =========================================================================
-    const ctaForm = document.getElementById('ctaContactForm');
-    const ctaStatus = document.getElementById('ctaFormStatus');
-    const ctaSubmitBtn = document.getElementById('ctaSubmitBtn');
-
-    if (ctaForm) {
-        ctaForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const nameInput = document.getElementById('cta-name');
-            const emailInput = document.getElementById('cta-email');
-            const phoneInput = document.getElementById('cta-phone');
-            const serviceInput = document.getElementById('cta-service');
-            const detailsInput = document.getElementById('cta-details');
-
-            const name = nameInput ? nameInput.value.trim() : '';
-            const email = emailInput ? emailInput.value.trim() : '';
-            const phone = phoneInput ? phoneInput.value.trim() : '';
-            const service = serviceInput ? serviceInput.value : '';
-            const details = detailsInput ? detailsInput.value.trim() : '';
-
-            // Reset field error highlights
-            [nameInput, emailInput, serviceInput].forEach(field => {
-                if (field) field.classList.remove('input-error');
-            });
-
-            // Validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            let errorMessage = '';
-
-            if (!name) {
-                errorMessage = 'Please enter your full name.';
-                if (nameInput) nameInput.classList.add('input-error');
-            } else if (!email || !emailRegex.test(email)) {
-                errorMessage = 'Please enter a valid business email address.';
-                if (emailInput) emailInput.classList.add('input-error');
-            } else if (!service) {
-                errorMessage = 'Please select a service required.';
-                if (serviceInput) serviceInput.classList.add('input-error');
-            }
-
-            if (errorMessage) {
-                if (ctaStatus) {
-                    ctaStatus.className = 'cta-form-status error';
-                    ctaStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMessage}`;
-                    ctaStatus.style.display = 'block';
-                }
-                return;
-            }
-
-            // Valid state: Prepare submission
-            const origBtnHtml = ctaSubmitBtn ? ctaSubmitBtn.innerHTML : '<span>Send Inquiry &rarr;</span>';
-            if (ctaSubmitBtn) {
-                ctaSubmitBtn.disabled = true;
-                ctaSubmitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Preparing Inquiry...';
-            }
-
-            setTimeout(() => {
-                // Direct delivery fallback via email client
-                const subject = encodeURIComponent(`Project Inquiry: ${service} - ${name}`);
-                const bodyLines = [
-                    `Full Name: ${name}`,
-                    `Business Email: ${email}`,
-                    `Phone Number: ${phone || 'Not provided'}`,
-                    `Service Required: ${service}`,
-                    '',
-                    'Project Details:',
-                    details || 'No additional details provided.'
-                ];
-                const body = encodeURIComponent(bodyLines.join('\n'));
-                const mailtoUri = `mailto:mmdigitagarage@gmail.com?subject=${subject}&body=${body}`;
-
-                // Trigger email client directly
-                window.location.href = mailtoUri;
-
-                if (ctaStatus) {
-                    ctaStatus.className = 'cta-form-status success';
-                    ctaStatus.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Inquiry prepared!</strong> Opening your email client to send directly to <em>mmdigitagarage@gmail.com</em>. You can also contact us directly at <a href="mailto:mmdigitagarage@gmail.com" style="color: inherit; text-decoration: underline;">mmdigitagarage@gmail.com</a>.`;
-                    ctaStatus.style.display = 'block';
-                }
-
-                ctaForm.reset();
-
-                if (ctaSubmitBtn) {
-                    ctaSubmitBtn.disabled = false;
-                    ctaSubmitBtn.innerHTML = '<i class="fas fa-check"></i> Inquiry Ready!';
-                    setTimeout(() => {
-                        ctaSubmitBtn.innerHTML = origBtnHtml;
-                    }, 4500);
-                }
-            }, 600);
-        });
-
-        // Real-time error dismissal when typing or selecting
-        ctaForm.querySelectorAll('input, select, textarea').forEach(input => {
-            input.addEventListener('input', () => {
-                input.classList.remove('input-error');
-                if (ctaStatus && ctaStatus.classList.contains('error')) {
-                    ctaStatus.style.display = 'none';
-                }
-            });
-            input.addEventListener('change', () => {
-                input.classList.remove('input-error');
-                if (ctaStatus && ctaStatus.classList.contains('error')) {
-                    ctaStatus.style.display = 'none';
-                }
-            });
-        });
     }
 
     // =========================================================================
