@@ -1,6 +1,10 @@
 /**
  * Vercel Serverless Function: /api/contact
- * Handles contact form submissions for MM Digital Garage via Resend Email API.
+ * Handles contact form and proposal submissions for MM Digital Garage via Resend Email API.
+ * Architecture:
+ *   - Visitor email -> replyTo
+ *   - Verified MM Digital Garage domain -> from (default: notifications@mmdigitalgarage.tech)
+ *   - Business inbox -> to (default: mmdigitalgarage@gmail.com)
  */
 
 const { Resend } = require('resend');
@@ -23,43 +27,69 @@ function isValidEmail(email) {
     return emailRegex.test(email.trim()) && email.length <= 254;
 }
 
+// Helper to safely parse request body across various Vercel / Node runtimes
+async function parseRequestBody(req) {
+    if (req.body) {
+        let b = req.body;
+        if (Buffer.isBuffer(b)) {
+            try { return JSON.parse(b.toString('utf8')); } catch { return null; }
+        }
+        if (typeof b === 'string') {
+            try { return JSON.parse(b); } catch { return null; }
+        }
+        return b;
+    }
+    // Read raw stream if not parsed by framework
+    return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk) => { data += chunk; });
+        req.on('end', () => {
+            if (!data) return resolve(null);
+            try { resolve(JSON.parse(data)); } catch { resolve(null); }
+        });
+        req.on('error', () => resolve(null));
+    });
+}
+
 module.exports = async function handler(req, res) {
+    // CORS headers for preflight & cross-origin safety
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     // Only allow POST requests
     if (req.method !== 'POST') {
-        res.setHeader('Allow', ['POST']);
+        res.setHeader('Allow', ['POST', 'OPTIONS']);
         return res.status(405).json({
             success: false,
-            message: `Method ${req.method} not allowed. Please use POST.`
+            message: `Method ${req.method} not allowed. Please use POST.`,
+            code: 'METHOD_NOT_ALLOWED'
         });
     }
 
     try {
-        // Parse request body
-        let body = req.body;
-        if (typeof body === 'string') {
-            try {
-                body = JSON.parse(body);
-            } catch (parseErr) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid JSON payload received.'
-                });
-            }
-        }
+        const body = await parseRequestBody(req);
 
         if (!body || typeof body !== 'object') {
             return res.status(400).json({
                 success: false,
-                message: 'Empty or invalid request body.'
+                message: 'Invalid or empty request payload received.',
+                code: 'INVALID_PAYLOAD'
             });
         }
 
         // Spam protection: check honeypot fields
         if (body._gotcha || body.website) {
-            // Silently succeed for bots without actually sending email
+            // Silently succeed for bots without dispatching email
             return res.status(200).json({
                 success: true,
-                message: 'Your inquiry has been received.'
+                message: 'Your inquiry has been received.',
+                code: 'SPAM_HONEYPOT_TRIGGERED'
             });
         }
 
@@ -79,7 +109,8 @@ module.exports = async function handler(req, res) {
             if (!firstName || !lastName) {
                 return res.status(400).json({
                     success: false,
-                    message: 'First name and last name are required.'
+                    message: 'First name and last name are required.',
+                    code: 'VALIDATION_MISSING_NAME'
                 });
             }
 
@@ -87,18 +118,17 @@ module.exports = async function handler(req, res) {
             customerEmail = (body.email || '').trim();
             customerPhone = (body.phone || '').trim();
 
-            // Services can be an array or string
-            if (Array.isArray(body.services)) {
+            if (Array.isArray(body.services) && body.services.length > 0) {
                 customerServices = body.services.join(', ');
             } else if (body.services) {
                 customerServices = String(body.services).trim();
             } else {
-                customerServices = 'None specified';
+                customerServices = 'General Capabilities';
             }
 
             customerDetails = (body.notes || body.details || '').trim();
         } else {
-            // Project Inquiry form (from CTA section)
+            // Project Inquiry form (CTA section)
             customerName = (body.name || '').trim();
             customerEmail = (body.email || '').trim();
             customerPhone = (body.phone || '').trim();
@@ -108,52 +138,55 @@ module.exports = async function handler(req, res) {
             if (!customerName) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Full name is required.'
+                    message: 'Full name is required.',
+                    code: 'VALIDATION_MISSING_NAME'
                 });
             }
 
             if (!customerServices) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Please select a required service.'
+                    message: 'Please select a required service.',
+                    code: 'VALIDATION_MISSING_SERVICE'
                 });
             }
         }
 
-        // Validate email
+        // Validate customer email
         if (!isValidEmail(customerEmail)) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide a valid business email address.'
+                message: 'Please provide a valid business email address.',
+                code: 'VALIDATION_INVALID_EMAIL'
             });
         }
 
-        // Truncate overly long inputs for safety
+        // Truncate overly long inputs for safe transmission
         customerName = customerName.substring(0, 150);
         customerEmail = customerEmail.substring(0, 254);
         customerPhone = customerPhone.substring(0, 40);
         customerServices = customerServices.substring(0, 300);
         customerDetails = customerDetails.substring(0, 4000);
 
-        // Check Resend API configuration
-        const apiKey = process.env.RESEND_API_KEY;
-        const toEmail = process.env.CONTACT_TO_EMAIL || 'mmdigitagarage@gmail.com';
-        const fromEmail = process.env.CONTACT_FROM_EMAIL || 'MM Digital Garage <onboarding@resend.dev>';
+        // Environment variables configuration (sanitize quotes and whitespace)
+        const apiKey = (process.env.RESEND_API_KEY || '').trim().replace(/^["']|["']$/g, '');
+        const toEmail = (process.env.CONTACT_TO_EMAIL || 'mmdigitalgarage@gmail.com').trim().replace(/^["']|["']$/g, '');
+        const fromEmail = (process.env.CONTACT_FROM_EMAIL || 'MM Digital Garage <notifications@mmdigitalgarage.tech>').trim().replace(/^["']|["']$/g, '');
 
         if (!apiKey) {
-            console.error('Error: RESEND_API_KEY environment variable is not defined.');
+            console.error('[Configuration Error] RESEND_API_KEY environment variable is not defined in Vercel settings.');
             return res.status(500).json({
                 success: false,
-                message: 'Email service configuration is pending. Please configure RESEND_API_KEY in Vercel settings.'
+                message: 'Email service configuration is pending. Please configure RESEND_API_KEY in Vercel settings.',
+                code: 'CONFIG_MISSING_API_KEY'
             });
         }
 
-        // Prepare email subject and badges
+        // Prepare email subject and timestamps
         const isProposal = formType === 'proposal';
         const formTitle = isProposal ? 'Proposal Request' : 'Project Inquiry';
         const emailSubject = `[${formTitle}] ${customerName} ${customerServices ? `— ${customerServices}` : ''}`;
 
-        // Get submission metadata
         const now = new Date();
         const dateString = now.toLocaleString('en-US', {
             timeZone: 'Asia/Kathmandu',
@@ -170,7 +203,7 @@ module.exports = async function handler(req, res) {
             ? escapeHtml(customerDetails).replace(/\n/g, '<br>')
             : '<em>No additional details provided.</em>';
 
-        // Build HTML Email template matching MM Digital brand aesthetic
+        // Clean HTML Email template
         const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
@@ -260,13 +293,17 @@ ${customerDetails || 'No additional details provided.'}
 Reply directly to this email to contact ${customerName} (${customerEmail}).
         `.trim();
 
-        // Initialize Resend SDK and send email
+        // Split recipients if multiple specified
+        const toRecipients = toEmail.includes(',')
+            ? toEmail.split(',').map(e => e.trim()).filter(Boolean)
+            : [toEmail];
+
+        // Initialize Resend SDK
         const resend = new Resend(apiKey);
 
         const sendResult = await resend.emails.send({
             from: fromEmail,
-            to: toEmail,
-            reply_to: customerEmail,
+            to: toRecipients,
             replyTo: customerEmail,
             subject: emailSubject,
             html: emailHtml,
@@ -274,10 +311,15 @@ Reply directly to this email to contact ${customerName} (${customerEmail}).
         });
 
         if (sendResult.error) {
-            console.error('Resend API returned error:', sendResult.error);
-            return res.status(500).json({
+            console.error('[Resend Dispatch Error]', {
+                message: sendResult.error.message,
+                name: sendResult.error.name,
+                statusCode: sendResult.error.statusCode
+            });
+            return res.status(sendResult.error.statusCode || 500).json({
                 success: false,
-                message: sendResult.error.message || 'Failed to dispatch email via Resend. Please check your domain and API key.'
+                message: sendResult.error.message || 'Failed to dispatch email via Resend.',
+                code: sendResult.error.name || 'RESEND_SEND_FAILED'
             });
         }
 
@@ -288,10 +330,11 @@ Reply directly to this email to contact ${customerName} (${customerEmail}).
         });
 
     } catch (err) {
-        console.error('Unhandled server error in /api/contact:', err);
+        console.error('[Server Error in /api/contact]', err && err.message ? err.message : err);
         return res.status(500).json({
             success: false,
-            message: 'An unexpected server error occurred while processing your request. Please try again later.'
+            message: err && err.message ? err.message : 'An unexpected server error occurred while processing your request.',
+            code: (err && err.code) || 'INTERNAL_SERVER_ERROR'
         });
     }
 };

@@ -260,7 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }, 5000);
                     }
                 } else {
-                    const errMsg = result.message || 'Failed to submit proposal request. Please check your details or email us directly at mmdigitagarage@gmail.com.';
+                    console.warn('[Proposal Form] Submission failed:', response.status, result);
+                    const errMsg = result.message || (typeof result.error === 'string' ? result.error : (result.error && result.error.message)) || 'Failed to submit proposal request. Please check your details or email us directly at mmdigitalgarage@gmail.com.';
                     showModalError(errMsg);
                     if (submitBtn) {
                         submitBtn.disabled = false;
@@ -268,7 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } catch (fetchErr) {
-                showModalError('Network error: Unable to reach the server. Please check your internet connection or email us directly at mmdigitagarage@gmail.com.');
+                console.error('[Proposal Form] Network error:', fetchErr);
+                showModalError('Network error: Unable to reach the server. Please check your internet connection or email us directly at mmdigitalgarage@gmail.com.');
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = origText;
@@ -375,7 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }, 5000);
                     }
                 } else {
-                    const errMsg = result.message || 'Unable to submit your inquiry. Please verify your details or email us directly at mmdigitagarage@gmail.com.';
+                    console.warn('[CTA Inquiry Form] Submission failed:', response.status, result);
+                    const errMsg = result.message || (typeof result.error === 'string' ? result.error : (result.error && result.error.message)) || 'Unable to submit your inquiry. Please verify your details or email us directly at mmdigitalgarage@gmail.com.';
                     showCtaError(errMsg);
                     if (ctaSubmitBtn) {
                         ctaSubmitBtn.disabled = false;
@@ -383,7 +386,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } catch (fetchErr) {
-                showCtaError('Connection error: Unable to reach the server. Please check your network connection or email us directly at mmdigitagarage@gmail.com.');
+                console.error('[CTA Inquiry Form] Network error:', fetchErr);
+                showCtaError('Connection error: Unable to reach the server. Please check your network connection or email us directly at mmdigitalgarage@gmail.com.');
                 if (ctaSubmitBtn) {
                     ctaSubmitBtn.disabled = false;
                     ctaSubmitBtn.innerHTML = origBtnHtml;
