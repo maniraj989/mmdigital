@@ -834,7 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
             label: 'Brands & Businesses Served'
         },
         'stat-projects': {
-            target: 130,
+            target: 3000,
             suffix: '+',
             isPlaceholder: true,
             label: 'Projects Completed'
